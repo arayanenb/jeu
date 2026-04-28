@@ -272,15 +272,29 @@
 <body>
 
 <div class="dashboard">
-  <!-- LEFT PANEL: Square -->
+  <!-- LEFT PANEL: Square (Discipline) -->
   <div class="panel">
     <div class="square-container">
       <div class="status-square" id="statusSquare"></div>
       <div class="square-label">Discipline</div>
+      <div style="font-size: 0.7rem; color: #a7a9be;">(écrire quand le carré est VERT)</div>
     </div>
   </div>
 
-  <!-- CENTER PANEL: Dice -->
+  <!-- CENTER PANEL: Timer -->
+  <div class="panel">
+    <h2 style="font-family:'Bebas Neue'; color:#e8c76b;">⏱️ TIMER</h2>
+    <div class="timer-display">
+      <span id="timerDisplay">00:00</span>
+    </div>
+    <div class="set-area">
+      <input type="number" id="timeInput" placeholder="seconds" min="1" value="300">
+      <button id="setTimerBtn" class="set-btn">SET</button>
+    </div>
+    <div style="font-size: 0.7rem; color: #a7a9be; margin-top: 0.5rem;">(définit la durée du jeu)</div>
+  </div>
+
+  <!-- RIGHT PANEL: Dice (Motivation) -->
   <div class="panel">
     <div class="dice-wrapper">
       <div class="dice" id="dice">
@@ -293,41 +307,30 @@
     </div>
     <div class="result-number" id="diceResult">⚀</div>
     <div class="action-message" id="actionMsg">⏳ Press START</div>
-  </div>
-
-  <!-- RIGHT PANEL: Timer + Set button only -->
-  <div class="panel">
-    <h2 style="font-family:'Bebas Neue'; color:#e8c76b;">TIMER</h2>
-    <div class="timer-display">
-      <span id="timerDisplay">00:00</span>
-    </div>
-    <div class="set-area">
-      <input type="number" id="timeInput" placeholder="seconds" min="1" value="300">
-      <button id="setTimerBtn" class="set-btn">SET</button>
-    </div>
+    <div style="font-size: 0.7rem; color: #a7a9be;">(dé toutes les 6s → >3 = écrire)</div>
   </div>
 
   <!-- BOTTOM AREA: START / RESET / RESULTS -->
   <div class="start-area">
     <div class="buttons-row">
       <button id="globalStartBtn" class="big-start">▶ START</button>
-      <button id="globalResetBtn" class="big-start reset">RESET</button>
+      <button id="globalResetBtn" class="big-start reset">🔄 RESET</button>
     </div>
 
     <!-- Conteneur des résultats (masqué au départ) -->
     <div id="resultsContainer" class="results-area">
       <div class="counter-container">
-        <div class="counter-label">discipline</div>
+        <div class="counter-label">🟢 compteur vert (Discipline)</div>
         <div class="counter-value" id="greenCount">0</div>
       </div>
       <div class="counter-container">
-        <div class="counter-label">motivation</div>
+        <div class="counter-label">🎲 écritures autorisées (Motivation)</div>
         <div class="counter-value" id="writeCount">0</div>
       </div>
     </div>
 
     <!-- Bouton pour afficher les résultats (désactivé tant que le timer n'est pas fini) -->
-    <button id="showResultsBtn" class="big-start results" disabled>résultats</button>
+    <button id="showResultsBtn" class="big-start results" disabled>📊 Afficher résultats</button>
   </div>
 </div>
 
@@ -361,20 +364,20 @@
 
   function updateMessage(rolled) {
     if (rolled > 3) {
-      actionMsgSpan.innerHTML = "Vous êtes motivé";
+      actionMsgSpan.innerHTML = "✍️ Vous écrivez ! (motivé)";
       actionMsgSpan.style.color = "#a3e4b0";
     } else {
-      actionMsgSpan.innerHTML = "Vous n'êtes pas motivé";
+      actionMsgSpan.innerHTML = "⏭️ Vous passez (pas motivé)";
       actionMsgSpan.style.color = "#f7b05e";
     }
   }
 
   function setDiceSymbol(rolled) {
-    const symbols = {1:"",2:"",3:"",4:"",5:"",6:""};
+    const symbols = {1:"⚀",2:"⚁",3:"⚂",4:"⚃",5:"⚄",6:"⚅"};
     resultSpan.innerText = symbols[rolled];
   }
 
-  // variables globales des compteurs (seront incrémentées)
+  // variables globales des compteurs
   let greenCounter = 0;
   let writeCounter = 0;
 
@@ -448,7 +451,7 @@
     if (diceInterval) clearInterval(diceInterval);
     diceInterval = setInterval(() => {
       if (isGameActive) rollAndDecide();
-    }, 6000); // 6 seconds
+    }, 9000); // 9 seconds
     if (isGameActive) rollAndDecide();
   }
 
@@ -520,7 +523,7 @@
     stopSquareToggling();
     stopCountdown();
     globalStartBtn.disabled = false;
-    actionMsgSpan.innerHTML = "Fin du Jeu";
+    actionMsgSpan.innerHTML = "⏰ Fin du Jeu";
     actionMsgSpan.style.color = "#e8c76b";
 
     // Activer le bouton "Afficher résultats"
@@ -560,7 +563,7 @@
     if (isGameActive) return;
     let currentSet = parseInt(timeInput.value);
     if (isNaN(currentSet) || currentSet <= 0) {
-      alert("Please set a valid time (seconds > 0) using the SET button.");
+      alert("Veuillez définir un temps valide (secondes > 0) avec le bouton SET.");
       return;
     }
     // Réinitialiser les compteurs (nouvelle partie)
@@ -577,7 +580,7 @@
     isGameActive = true;
     globalStartBtn.disabled = true;
     actionMsgSpan.style.color = "#ffda9e";
-    actionMsgSpan.innerHTML = "🎲 Rolling...";
+    actionMsgSpan.innerHTML = "🎲 Lancement...";
     startSquareToggling();
     startDiceRolling();
     startCountdown();
@@ -586,7 +589,7 @@
   // Événement pour afficher les résultats
   showResultsBtn.addEventListener('click', function() {
     resultsContainer.style.display = 'flex';
-    this.disabled = true; // pour ne pas le recliquer après affichage
+    this.disabled = true;
   });
 
   // Initialisation des événements
