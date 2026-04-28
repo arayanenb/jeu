@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Motivation vs Discipline · Timer + Dice</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #0f0e17 0%, #1a1828 100%);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      opacity: 0.4;
+      z-index: 0;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2rem;
+      width: 100%;
+      max-width: 1300px;
+      align-items: start;
+      z-index: 1;
+    }
+
+    .panel {
+      background: rgba(26, 24, 40, 0.5);
+      backdrop-filter: blur(8px);
+      border-radius: 2.5rem;
+      padding: 2rem 1rem;
+      text-align: center;
+      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(232, 199, 107, 0.2);
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .square-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .status-square {
+      width: 140px;
+      height: 140px;
+      border-radius: 28px;
+      background-color: #e74c3c;
+      transition: background-color 0.2s ease;
+      box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+    }
+    .square-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: #a7a9be;
+    }
+
+    .dice-wrapper {
+      perspective: 600px;
+    }
+    .dice {
+      width: 130px;
+      height: 130px;
+      background: #fffffe;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 3px #e8c76b, 8px 12px 0px 0px #e8c76b, 0 30px 60px rgba(0,0,0,0.5);
+      will-change: transform;
+      margin-bottom: 1rem;
+    }
+    .dots {
+      display: grid;
+      width: 88px;
+      height: 88px;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 0;
+    }
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0f0e17;
+      align-self: center;
+      justify-self: center;
+      opacity: 0;
+      transform: scale(0);
+      transition: opacity 0.1s, transform 0.1s;
+    }
+    .dot.visible { opacity: 1; transform: scale(1); }
+
+    @keyframes roll {
+      0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+      15%  { transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg); }
+      30%  { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
+      50%  { transform: rotateX(480deg) rotateY(300deg) rotateZ(180deg); }
+      70%  { transform: rotateX(600deg) rotateY(420deg) rotateZ(250deg); }
+      85%  { transform: rotateX(680deg) rotateY(460deg) rotateZ(280deg); }
+      92%  { transform: rotateX(710deg) rotateY(480deg) rotateZ(292deg); }
+      100% { transform: rotateX(720deg) rotateY(480deg) rotateZ(360deg); }
+    }
+    .dice.rolling {
+      animation: roll 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      box-shadow: 0 0 0 3px #e8c76b, 4px 6px 0px 0px #e8c76b, 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .result-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem;
+      color: #e8c76b;
+      margin: 0.5rem 0;
+    }
+    .action-message {
+      font-size: 1.2rem;
+      font-weight: 600;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 18px;
+      border-radius: 60px;
+      color: #ffda9e;
+    }
+
+    .timer-display {
+      background: #0f0e17;
+      padding: 0.8rem;
+      border-radius: 2rem;
+      margin: 1rem 0;
+      width: 100%;
+    }
+    .timer-display span {
+      font-size: 3.2rem;
+      font-family: monospace;
+      font-weight: bold;
+      color: #e8c76b;
+      letter-spacing: 5px;
+    }
+    .set-area {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+    .set-area input {
+      background: #2a2838;
+      border: none;
+      padding: 12px 15px;
+      font-size: 1.2rem;
+      width: 120px;
+      text-align: center;
+      border-radius: 40px;
+      color: white;
+      font-family: monospace;
+      font-weight: bold;
+    }
+    .set-btn {
+      background: #e8c76b;
+      border: none;
+      padding: 0 20px;
+      border-radius: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: 0.1s;
+    }
+    .set-btn:active { transform: scale(0.96); }
+
+    .start-area {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .buttons-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .big-start {
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+      border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 4px;
+      padding: 16px 56px;
+      border-radius: 60px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 12px 20px rgba(0,0,0,0.4);
+      transition: 0.08s linear;
+    }
+    .big-start:active { transform: scale(0.97); }
+    .big-start:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .big-start.reset {
+      background: linear-gradient(135deg, #7f8c8d, #2c3e50);
+    }
+
+    .big-start.results {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+
+    .results-area {
+      display: none;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+      width: 100%;
+    }
+
+    .counter-container {
+      text-align: center;
+      background: rgba(0,0,0,0.4);
+      padding: 8px 16px;
+      border-radius: 40px;
+      min-width: 160px;
+    }
+    .counter-label {
+      font-size: 0.8rem;
+      color: #a7a9be;
+      letter-spacing: 1px;
+    }
+    .counter-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      color: #e8c76b;
+      line-height: 1.2;
+    }
+
+    @media (max-width: 850px) {
+      .dashboard { gap: 1rem; }
+      .timer-display span { font-size: 2rem; }
+      .status-square { width: 100px; height: 100px; }
+    }
+    @media (max-width: 700px) {
+      .dashboard { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="dashboard">
+  <!-- LEFT PANEL: Square -->
+  <div class="panel">
+    <div class="square-container">
+      <div class="status-square" id="statusSquare"></div>
+      <div class="square-label">Discipline</div>
+    </div>
+  </div>
+
+  <!-- CENTER PANEL: Dice -->
+  <div class="panel">
+    <div class="dice-wrapper">
+      <div class="dice" id="dice">
+        <div class="dots" id="dots">
+          <div class="dot" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div>
+          <div class="dot" id="d4"></div><div class="dot" id="d5"></div><div class="dot" id="d6"></div>
+          <div class="dot" id="d7"></div><div class="dot" id="d8"></div><div class="dot" id="d9"></div>
+        </div>
+      </div>
+    </div>
+    <div class="result-number" id="diceResult">⚀</div>
+    <div class="action-message" id="actionMsg">⏳ Press START</div>
+  </div>
+
+  <!-- RIGHT PANEL: Timer + Set button only -->
+  <div class="panel">
+    <h2 style="font-family:'Bebas Neue'; color:#e8c76b;">TIMER</h2>
+    <div class="timer-display">
+      <span id="timerDisplay">00:00</span>
+    </div>
+    <div class="set-area">
+      <input type="number" id="timeInput" placeholder="seconds" min="1" value="300">
+      <button id="setTimerBtn" class="set-btn">SET</button>
+    </div>
+  </div>
+
+  <!-- BOTTOM AREA: START / RESET / RESULTS -->
+  <div class="start-area">
+    <div class="buttons-row">
+      <button id="globalStartBtn" class="big-start">▶ START</button>
+      <button id="globalResetBtn" class="big-start reset">RESET</button>
+    </div>
+
+    <!-- Conteneur des résultats (masqué au départ) -->
+    <div id="resultsContainer" class="results-area">
+      <div class="counter-container">
+        <div class="counter-label">discipline</div>
+        <div class="counter-value" id="greenCount">0</div>
+      </div>
+      <div class="counter-container">
+        <div class="counter-label">motivation</div>
+        <div class="counter-value" id="writeCount">0</div>
+      </div>
+    </div>
+
+    <!-- Bouton pour afficher les résultats (désactivé tant que le timer n'est pas fini) -->
+    <button id="showResultsBtn" class="big-start results" disabled>résultats</button>
+  </div>
+</div>
+
+<script>
+  // ---------- DICE LOGIC ----------
+  const FACES = {
+    1: [5], 2: [3,7], 3: [3,5,7], 4: [1,3,7,9], 5: [1,3,5,7,9], 6: [1,3,4,6,7,9]
+  };
+  const dice = document.getElementById('dice');
+  const resultSpan = document.getElementById('diceResult');
+  const actionMsgSpan = document.getElementById('actionMsg');
+  const dotEls = Array.from({length: 9}, (_, i) => document.getElementById(`d${i+1}`));
+
+  function showFace(n) {
+    const lit = new Set(FACES[n]);
+    dotEls.forEach((el, idx) => {
+      if (lit.has(idx+1)) el.classList.add('visible');
+      else el.classList.remove('visible');
+    });
+  }
+
+  function animateAndSetFace(rolled) {
+    dice.classList.remove('rolling');
+    void dice.offsetWidth;
+    dice.classList.add('rolling');
+    dice.addEventListener('animationend', () => {
+      showFace(rolled);
+      dice.classList.remove('rolling');
+    }, { once: true });
+  }
+
+  function updateMessage(rolled) {
+    if (rolled > 3) {
+      actionMsgSpan.innerHTML = "Vous êtes motivé";
+      actionMsgSpan.style.color = "#a3e4b0";
+    } else {
+      actionMsgSpan.innerHTML = "Vous n'êtes pas motivé";
+      actionMsgSpan.style.color = "#f7b05e";
+    }
+  }
+
+  function setDiceSymbol(rolled) {
+    const symbols = {1:"",2:"",3:"",4:"",5:"",6:""};
+    resultSpan.innerText = symbols[rolled];
+  }
+
+  // variables globales des compteurs (seront incrémentées)
+  let greenCounter = 0;
+  let writeCounter = 0;
+
+  function updateCountersDisplay() {
+    document.getElementById('greenCount').innerText = greenCounter;
+    document.getElementById('writeCount').innerText = writeCounter;
+  }
+
+  function rollAndDecide() {
+    const rolled = Math.floor(Math.random() * 6) + 1;
+    animateAndSetFace(rolled);
+    setDiceSymbol(rolled);
+    updateMessage(rolled);
+    if (rolled > 3) {
+      writeCounter++;
+      updateCountersDisplay();
+    }
+    return rolled;
+  }
+
+  // ---------- SQUARE: starts GREEN -> after 5 sec turns RED, then alternates every 5s ----------
+  const square = document.getElementById('statusSquare');
+  let squareInterval = null;
+  let isSquareGreen = true;
+
+  function startSquareToggling() {
+    if (squareInterval) clearInterval(squareInterval);
+    // start green
+    square.style.backgroundColor = "#2ecc71";
+    greenCounter++;
+    updateCountersDisplay();
+    isSquareGreen = true;
+    // after 5 seconds, turn red, then toggle every 5s
+    let firstToggle = setTimeout(() => {
+      square.style.backgroundColor = "#e74c3c";
+      isSquareGreen = false;
+      // then set interval to alternate every 5 seconds
+      squareInterval = setInterval(() => {
+        if (isSquareGreen) {
+          square.style.backgroundColor = "#e74c3c";
+          isSquareGreen = false;
+        } else {
+          square.style.backgroundColor = "#2ecc71";
+          greenCounter++;
+          updateCountersDisplay();
+          isSquareGreen = true;
+        }
+      }, 5000);
+    }, 5000);
+    square._firstTimeout = firstToggle;
+  }
+
+  function stopSquareToggling() {
+    if (square._firstTimeout) {
+      clearTimeout(square._firstTimeout);
+      square._firstTimeout = null;
+    }
+    if (squareInterval) {
+      clearInterval(squareInterval);
+      squareInterval = null;
+    }
+    square.style.backgroundColor = "#e74c3c";
+    isSquareGreen = false;
+  }
+
+  // ---------- DICE ROLL INTERVAL (every 6 seconds) ----------
+  let diceInterval = null;
+  let isGameActive = false;
+
+  function startDiceRolling() {
+    if (diceInterval) clearInterval(diceInterval);
+    diceInterval = setInterval(() => {
+      if (isGameActive) rollAndDecide();
+    }, 6000); // 6 seconds
+    if (isGameActive) rollAndDecide();
+  }
+
+  function stopDiceRolling() {
+    if (diceInterval) {
+      clearInterval(diceInterval);
+      diceInterval = null;
+    }
+  }
+
+  // ---------- TIMER ----------
+  let timerSeconds = 300;
+  let timerRemaining = 300;
+  let timerCountdown = null;
+  const timeInput = document.getElementById('timeInput');
+  const setTimerBtn = document.getElementById('setTimerBtn');
+  const timerDisplaySpan = document.getElementById('timerDisplay');
+  const globalStartBtn = document.getElementById('globalStartBtn');
+  const globalResetBtn = document.getElementById('globalResetBtn');
+  const showResultsBtn = document.getElementById('showResultsBtn');
+  const resultsContainer = document.getElementById('resultsContainer');
+
+  function formatTime(sec) {
+    let mins = Math.floor(sec / 60);
+    let remainSec = sec % 60;
+    return `${mins.toString().padStart(2,'0')}:${remainSec.toString().padStart(2,'0')}`;
+  }
+
+  function updateTimerDisplay() {
+    timerDisplaySpan.innerText = formatTime(timerRemaining);
+  }
+
+  function setTimerValue() {
+    let val = parseInt(timeInput.value);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 7200) val = 7200;
+    timerSeconds = val;
+    timerRemaining = val;
+    updateTimerDisplay();
+  }
+  setTimerBtn.addEventListener('click', setTimerValue);
+
+  function startCountdown() {
+    if (timerCountdown) clearInterval(timerCountdown);
+    timerCountdown = setInterval(() => {
+      if (isGameActive && timerRemaining > 0) {
+        timerRemaining--;
+        updateTimerDisplay();
+        if (timerRemaining === 0) {
+          stopGame();
+        }
+      } else if (!isGameActive) {
+        if (timerCountdown) clearInterval(timerCountdown);
+      }
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    if (timerCountdown) {
+      clearInterval(timerCountdown);
+      timerCountdown = null;
+    }
+  }
+
+  function stopGame() {
+    if (!isGameActive) return;
+    isGameActive = false;
+    stopDiceRolling();
+    stopSquareToggling();
+    stopCountdown();
+    globalStartBtn.disabled = false;
+    actionMsgSpan.innerHTML = "Fin du Jeu";
+    actionMsgSpan.style.color = "#e8c76b";
+
+    // Activer le bouton "Afficher résultats"
+    showResultsBtn.disabled = false;
+  }
+
+  function resetGame() {
+    // Arrêter tout
+    if (isGameActive) stopGame();
+    // Remettre le timer à la valeur affichée
+    let resetValue = parseInt(timeInput.value);
+    if (isNaN(resetValue) || resetValue <= 0) resetValue = 300;
+    timerRemaining = resetValue;
+    timerSeconds = resetValue;
+    updateTimerDisplay();
+    // Réinitialiser le dé
+    showFace(1);
+    setDiceSymbol(1);
+    actionMsgSpan.innerHTML = "Motivé ou pas";
+    actionMsgSpan.style.color = "#ffda9e";
+    // Remettre le carré à rouge
+    stopSquareToggling();
+    square.style.backgroundColor = "#e74c3c";
+    isSquareGreen = false;
+    // Réinitialiser les compteurs
+    greenCounter = 0;
+    writeCounter = 0;
+    updateCountersDisplay();
+    // Cacher les résultats et désactiver le bouton
+    resultsContainer.style.display = 'none';
+    showResultsBtn.disabled = true;
+    // Réactiver le bouton START
+    globalStartBtn.disabled = false;
+  }
+
+  function globalStart() {
+    if (isGameActive) return;
+    let currentSet = parseInt(timeInput.value);
+    if (isNaN(currentSet) || currentSet <= 0) {
+      alert("Please set a valid time (seconds > 0) using the SET button.");
+      return;
+    }
+    // Réinitialiser les compteurs (nouvelle partie)
+    greenCounter = 0;
+    writeCounter = 0;
+    updateCountersDisplay();
+    // Cacher les résultats et désactiver le bouton show
+    resultsContainer.style.display = 'none';
+    showResultsBtn.disabled = true;
+    // Configurer le timer
+    timerSeconds = currentSet;
+    timerRemaining = currentSet;
+    updateTimerDisplay();
+    isGameActive = true;
+    globalStartBtn.disabled = true;
+    actionMsgSpan.style.color = "#ffda9e";
+    actionMsgSpan.innerHTML = "🎲 Rolling...";
+    startSquareToggling();
+    startDiceRolling();
+    startCountdown();
+  }
+
+  // Événement pour afficher les résultats
+  showResultsBtn.addEventListener('click', function() {
+    resultsContainer.style.display = 'flex';
+    this.disabled = true; // pour ne pas le recliquer après affichage
+  });
+
+  // Initialisation des événements
+  globalStartBtn.addEventListener('click', globalStart);
+  globalResetBtn.addEventListener('click', resetGame);
+
+  // Valeurs par défaut
+  timerRemaining = 300;
+  timeInput.value = 300;
+  updateTimerDisplay();
+  square.style.backgroundColor = "#e74c3c";
+  showFace(1);
+  setDiceSymbol(1);
+  actionMsgSpan.innerHTML = "Motivé ou pas";
+  isSquareGreen = false;
+  resultsContainer.style.display = 'none';
+  showResultsBtn.disabled = true;
+  greenCounter = 0;
+  writeCounter = 0;
+  updateCountersDisplay();
+</script>
+</body>
+</html>
