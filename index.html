@@ -272,18 +272,17 @@
 <body>
 
 <div class="dashboard">
-  <!-- LEFT PANEL: Square (Discipline) -->
+  <!-- LEFT PANEL: Square -->
   <div class="panel">
     <div class="square-container">
       <div class="status-square" id="statusSquare"></div>
       <div class="square-label">Discipline</div>
-      <div style="font-size: 0.7rem; color: #a7a9be;">(écrire quand le carré est VERT)</div>
     </div>
   </div>
 
   <!-- CENTER PANEL: Timer -->
   <div class="panel">
-    <h2 style="font-family:'Bebas Neue'; color:#e8c76b;">⏱️ TIMER</h2>
+    <h2 style="font-family:'Bebas Neue'; color:#e8c76b;">TIMER</h2>
     <div class="timer-display">
       <span id="timerDisplay">00:00</span>
     </div>
@@ -291,10 +290,9 @@
       <input type="number" id="timeInput" placeholder="seconds" min="1" value="300">
       <button id="setTimerBtn" class="set-btn">SET</button>
     </div>
-    <div style="font-size: 0.7rem; color: #a7a9be; margin-top: 0.5rem;">(définit la durée du jeu)</div>
   </div>
 
-  <!-- RIGHT PANEL: Dice (Motivation) -->
+  <!-- RIGHT PANEL: Dice -->
   <div class="panel">
     <div class="dice-wrapper">
       <div class="dice" id="dice">
@@ -307,30 +305,27 @@
     </div>
     <div class="result-number" id="diceResult">⚀</div>
     <div class="action-message" id="actionMsg">⏳ Press START</div>
-    <div style="font-size: 0.7rem; color: #a7a9be;">(dé toutes les 6s → >3 = écrire)</div>
   </div>
 
   <!-- BOTTOM AREA: START / RESET / RESULTS -->
   <div class="start-area">
     <div class="buttons-row">
       <button id="globalStartBtn" class="big-start">▶ START</button>
-      <button id="globalResetBtn" class="big-start reset">🔄 RESET</button>
+      <button id="globalResetBtn" class="big-start reset">RESET</button>
     </div>
 
-    <!-- Conteneur des résultats (masqué au départ) -->
     <div id="resultsContainer" class="results-area">
       <div class="counter-container">
-        <div class="counter-label">🟢 compteur vert (Discipline)</div>
+        <div class="counter-label">🟢 compteur vert</div>
         <div class="counter-value" id="greenCount">0</div>
       </div>
       <div class="counter-container">
-        <div class="counter-label">🎲 écritures autorisées (Motivation)</div>
+        <div class="counter-label">✍️ écritures autorisées</div>
         <div class="counter-value" id="writeCount">0</div>
       </div>
     </div>
 
-    <!-- Bouton pour afficher les résultats (désactivé tant que le timer n'est pas fini) -->
-    <button id="showResultsBtn" class="big-start results" disabled>📊 Afficher résultats</button>
+    <button id="showResultsBtn" class="big-start results" disabled>résultats</button>
   </div>
 </div>
 
@@ -343,7 +338,7 @@
   const resultSpan = document.getElementById('diceResult');
   const actionMsgSpan = document.getElementById('actionMsg');
   const dotEls = Array.from({length: 9}, (_, i) => document.getElementById(`d${i+1}`));
-
+  
   function showFace(n) {
     const lit = new Set(FACES[n]);
     dotEls.forEach((el, idx) => {
@@ -364,26 +359,43 @@
 
   function updateMessage(rolled) {
     if (rolled > 3) {
-      actionMsgSpan.innerHTML = "✍️ Vous écrivez ! (motivé)";
+      actionMsgSpan.innerHTML = "Vous êtes motivé";
       actionMsgSpan.style.color = "#a3e4b0";
     } else {
-      actionMsgSpan.innerHTML = "⏭️ Vous passez (pas motivé)";
+      actionMsgSpan.innerHTML = "Vous n'êtes pas motivé";
       actionMsgSpan.style.color = "#f7b05e";
     }
   }
 
   function setDiceSymbol(rolled) {
-    const symbols = {1:"⚀",2:"⚁",3:"⚂",4:"⚃",5:"⚄",6:"⚅"};
+    const symbols = {1:"",2:"",3:"",4:"",5:"",6:""};
     resultSpan.innerText = symbols[rolled];
   }
 
-  // variables globales des compteurs
   let greenCounter = 0;
   let writeCounter = 0;
+  let isGameActive = false;
+  let diceInterval = null;
+  let squareInterval = null;
+  let timerCountdown = null;
+  let isSquareGreen = true;
+  let timerSeconds = 300;
+  let timerRemaining = 300;
+
+  const square = document.getElementById('statusSquare');
+  const greenCountSpan = document.getElementById('greenCount');
+  const writeCountSpan = document.getElementById('writeCount');
+  const timeInput = document.getElementById('timeInput');
+  const setTimerBtn = document.getElementById('setTimerBtn');
+  const timerDisplaySpan = document.getElementById('timerDisplay');
+  const globalStartBtn = document.getElementById('globalStartBtn');
+  const globalResetBtn = document.getElementById('globalResetBtn');
+  const showResultsBtn = document.getElementById('showResultsBtn');
+  const resultsContainer = document.getElementById('resultsContainer');
 
   function updateCountersDisplay() {
-    document.getElementById('greenCount').innerText = greenCounter;
-    document.getElementById('writeCount').innerText = writeCounter;
+    greenCountSpan.innerText = greenCounter;
+    writeCountSpan.innerText = writeCounter;
   }
 
   function rollAndDecide() {
@@ -398,23 +410,15 @@
     return rolled;
   }
 
-  // ---------- SQUARE: starts GREEN -> after 5 sec turns RED, then alternates every 5s ----------
-  const square = document.getElementById('statusSquare');
-  let squareInterval = null;
-  let isSquareGreen = true;
-
   function startSquareToggling() {
     if (squareInterval) clearInterval(squareInterval);
-    // start green
     square.style.backgroundColor = "#2ecc71";
     greenCounter++;
     updateCountersDisplay();
     isSquareGreen = true;
-    // after 5 seconds, turn red, then toggle every 5s
     let firstToggle = setTimeout(() => {
       square.style.backgroundColor = "#e74c3c";
       isSquareGreen = false;
-      // then set interval to alternate every 5 seconds
       squareInterval = setInterval(() => {
         if (isSquareGreen) {
           square.style.backgroundColor = "#e74c3c";
@@ -425,8 +429,8 @@
           updateCountersDisplay();
           isSquareGreen = true;
         }
-      }, 9000);
-    }, 9000);
+      }, 4000);
+    }, 4000);
     square._firstTimeout = firstToggle;
   }
 
@@ -443,15 +447,11 @@
     isSquareGreen = false;
   }
 
-  // ---------- DICE ROLL INTERVAL (every 6 seconds) ----------
-  let diceInterval = null;
-  let isGameActive = false;
-
   function startDiceRolling() {
     if (diceInterval) clearInterval(diceInterval);
     diceInterval = setInterval(() => {
       if (isGameActive) rollAndDecide();
-    }, 9000); // 9 seconds
+    }, 6000);
     if (isGameActive) rollAndDecide();
   }
 
@@ -461,18 +461,6 @@
       diceInterval = null;
     }
   }
-
-  // ---------- TIMER ----------
-  let timerSeconds = 300;
-  let timerRemaining = 300;
-  let timerCountdown = null;
-  const timeInput = document.getElementById('timeInput');
-  const setTimerBtn = document.getElementById('setTimerBtn');
-  const timerDisplaySpan = document.getElementById('timerDisplay');
-  const globalStartBtn = document.getElementById('globalStartBtn');
-  const globalResetBtn = document.getElementById('globalResetBtn');
-  const showResultsBtn = document.getElementById('showResultsBtn');
-  const resultsContainer = document.getElementById('resultsContainer');
 
   function formatTime(sec) {
     let mins = Math.floor(sec / 60);
@@ -492,7 +480,6 @@
     timerRemaining = val;
     updateTimerDisplay();
   }
-  setTimerBtn.addEventListener('click', setTimerValue);
 
   function startCountdown() {
     if (timerCountdown) clearInterval(timerCountdown);
@@ -503,8 +490,6 @@
         if (timerRemaining === 0) {
           stopGame();
         }
-      } else if (!isGameActive) {
-        if (timerCountdown) clearInterval(timerCountdown);
       }
     }, 1000);
   }
@@ -523,40 +508,34 @@
     stopSquareToggling();
     stopCountdown();
     globalStartBtn.disabled = false;
-    actionMsgSpan.innerHTML = "⏰ Fin du Jeu";
+    actionMsgSpan.innerHTML = "Fin du Jeu";
     actionMsgSpan.style.color = "#e8c76b";
-
-    // Activer le bouton "Afficher résultats"
+    
+    // ACTIVER LE BOUTON RÉSULTATS
     showResultsBtn.disabled = false;
   }
 
   function resetGame() {
-    // Arrêter tout
     if (isGameActive) stopGame();
-    // Remettre le timer à la valeur affichée
     let resetValue = parseInt(timeInput.value);
     if (isNaN(resetValue) || resetValue <= 0) resetValue = 300;
     timerRemaining = resetValue;
     timerSeconds = resetValue;
     updateTimerDisplay();
-    // Réinitialiser le dé
     showFace(1);
     setDiceSymbol(1);
     actionMsgSpan.innerHTML = "Motivé ou pas";
     actionMsgSpan.style.color = "#ffda9e";
-    // Remettre le carré à rouge
     stopSquareToggling();
     square.style.backgroundColor = "#e74c3c";
     isSquareGreen = false;
-    // Réinitialiser les compteurs
+    globalStartBtn.disabled = false;
     greenCounter = 0;
     writeCounter = 0;
     updateCountersDisplay();
     // Cacher les résultats et désactiver le bouton
     resultsContainer.style.display = 'none';
     showResultsBtn.disabled = true;
-    // Réactiver le bouton START
-    globalStartBtn.disabled = false;
   }
 
   function globalStart() {
@@ -566,14 +545,11 @@
       alert("Veuillez définir un temps valide (secondes > 0) avec le bouton SET.");
       return;
     }
-    // Réinitialiser les compteurs (nouvelle partie)
     greenCounter = 0;
     writeCounter = 0;
     updateCountersDisplay();
-    // Cacher les résultats et désactiver le bouton show
     resultsContainer.style.display = 'none';
     showResultsBtn.disabled = true;
-    // Configurer le timer
     timerSeconds = currentSet;
     timerRemaining = currentSet;
     updateTimerDisplay();
@@ -586,17 +562,17 @@
     startCountdown();
   }
 
-  // Événement pour afficher les résultats
+  // Événements
+  setTimerBtn.addEventListener('click', setTimerValue);
+  globalStartBtn.addEventListener('click', globalStart);
+  globalResetBtn.addEventListener('click', resetGame);
+  
   showResultsBtn.addEventListener('click', function() {
     resultsContainer.style.display = 'flex';
     this.disabled = true;
   });
 
-  // Initialisation des événements
-  globalStartBtn.addEventListener('click', globalStart);
-  globalResetBtn.addEventListener('click', resetGame);
-
-  // Valeurs par défaut
+  // Initialisation
   timerRemaining = 300;
   timeInput.value = 300;
   updateTimerDisplay();
